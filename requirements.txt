@@ -1,0 +1,6 @@
+flask
+cassandra-driver
+redis
+streamlit
+requests
+pytest
