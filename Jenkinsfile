@@ -55,7 +55,7 @@ pipeline {
                 echo "❤️ Checking Cassandra..."
 
                 sh '''
-                sleep 20
+                sleep 90
                 docker exec cassandra-db nodetool status
                 '''
 
