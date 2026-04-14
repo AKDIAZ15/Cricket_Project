@@ -49,18 +49,21 @@ pipeline {
         }
 
         stage('Cassandra Health Check') {
-
             steps {
-
                 echo "❤️ Checking Cassandra..."
 
                 sh '''
-                sleep 90
-                docker exec cassandra-db nodetool status
-                '''
+                echo "Waiting for Cassandra to initialize..."
 
-            }
-        }
+                for i in {1..12}
+                do
+                    docker exec cassandra-db nodetool status && break
+                    echo "Cassandra not ready yet..."
+                    sleep 10
+                done
+                '''
+    }
+}
 
     }
 
