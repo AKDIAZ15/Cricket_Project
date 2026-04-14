@@ -27,15 +27,14 @@ pipeline {
         }
 
         stage('Test') {
+    steps {
+        echo '🧪 Running tests inside container...'
 
-            steps {
-
-                echo "🧪 Running tests..."
-
-                sh 'pytest test_app.py'
-
-            }
-        }
+        sh '''
+        docker run --rm cricket-app pytest test_app.py
+        '''
+    }
+}
 
         stage('Docker Deploy') {
 
