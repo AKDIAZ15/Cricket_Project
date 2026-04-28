@@ -21,35 +21,51 @@ pipeline {
 
                 echo "🔨 Building Docker image..."
 
-                sh 'docker build -t cricket-app .'
+                sh '''
+                docker build -t cricket-app .
+                '''
 
             }
         }
 
         stage('Test') {
-    steps {
-        echo '🧪 Running tests inside container...'
 
-        sh '''
-        docker run --rm cricket-app pytest test_app.py
-        '''
-    }
-}
+            steps {
+
+                echo "🧪 Running tests inside container..."
+
+                sh '''
+                docker run --rm cricket-app pytest test_app.py
+                '''
+
+            }
+        }
 
         stage('Docker Deploy') {
 
             steps {
 
-                echo "🐳 Starting containers..."
+                echo '🐳 Cleaning old containers...'
 
-                sh 'docker-compose down || true'
-                sh 'docker-compose up -d'
+                sh '''
+                docker rm -f cassandra-db redis-cache cricket-api || true
+                docker-compose down --remove-orphans || true
+                '''
+
+                echo '🐳 Starting containers...'
+
+                sh '''
+                docker-compose up -d
+                '''
 
             }
+
         }
 
         stage('Cassandra Health Check') {
+
             steps {
+
                 echo "❤️ Checking Cassandra..."
 
                 sh '''
@@ -62,8 +78,10 @@ pipeline {
                     sleep 10
                 done
                 '''
-    }
-}
+
+            }
+
+        }
 
     }
 
@@ -71,7 +89,7 @@ pipeline {
 
         success {
 
-            echo "✅ Pipeline Completed Successfully"
+            echo "✅ Pipeline Completed Successfully 🎉"
 
         }
 
@@ -82,4 +100,5 @@ pipeline {
         }
 
     }
+
 }
