@@ -28,7 +28,7 @@ session = cluster.connect('cricket_worldcup')
 
 @app.route("/")
 def home():
-    return "Cricket Stats API Running - Updated Version"
+    return "Cricket Stats API Running - Updated 2"
 
 # -------------------------
 # GET YEARS
