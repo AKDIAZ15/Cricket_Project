@@ -1,5 +1,6 @@
 import ast
 import csv
+import os
 
 from flask import Flask, jsonify
 import redis
@@ -16,7 +17,7 @@ app = Flask(__name__)
 # -------------------------
 
 r = redis.Redis(
-    host="127.0.0.1",
+    host=os.getenv("REDIS_HOST", "127.0.0.1"),
     port=6379,
     decode_responses=True
 )
@@ -74,7 +75,7 @@ try:
     if Cluster is None:
         raise RuntimeError("cassandra-driver is not installed")
 
-    cluster = Cluster(["127.0.0.1"])
+    cluster = Cluster([os.getenv("CASSANDRA_HOST", "127.0.0.1")])
     session = cluster.connect("cricket_worldcup")
     print("Connected to Cassandra.")
 except Exception as exc:
@@ -108,7 +109,7 @@ def rows_for_innings(match_id, innings):
 
 @app.route("/")
 def home():
-    return "Cricket Stats API Running - CI/CD DEMO V1"
+    return "Cricket Stats API Running - CI/CD DEMO V2"
 
 
 # -------------------------
