@@ -4,13 +4,16 @@ WORKDIR /app
 
 COPY . /app
 
-RUN pip install --no-cache-dir \
-    flask \
-    cassandra-driver \
-    redis \
-    streamlit \
-    requests \
-    pytest
+# Install curl (IMPORTANT FIX)
+RUN apt-get update && \
+    apt-get install -y curl && \
+    pip install --no-cache-dir \
+        flask \
+        cassandra-driver \
+        redis \
+        streamlit \
+        requests \
+        pytest
 
 EXPOSE 5000
 
