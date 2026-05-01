@@ -105,36 +105,29 @@ pipeline {
         }
 
         stage('Verify App') {
-
             steps {
-
                 sh '''
                 echo "Checking API readiness..."
-
                 sleep 20
 
                 for i in $(seq 1 30)
                 do
-                    if curl -s http://127.0.0.1:5000/ ; then
-                        echo "API Ready"
+                    # Fix: Execute curl natively inside the container to bypass network isolation
+                    if docker exec cricket-api curl -s http://localhost:5000/ > /dev/null; then
+                        echo "✅ API Ready"
                         exit 0
                     fi
 
-                    echo "Waiting for API..."
+                    echo "⏳ Waiting for API..."
                     sleep 5
                 done
 
-                echo "API failed to start"
+                echo "❌ API failed to start"
                 docker logs cricket-api --tail 100
-
                 exit 1
                 '''
-
             }
-
         }
-
-    }
 
     post {
 
