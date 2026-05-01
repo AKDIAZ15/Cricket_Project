@@ -4,43 +4,100 @@ pipeline {
 
     environment {
         DOCKER_API_VERSION = '1.43'
-        COMPOSE_PROJECT_NAME = 'cricket_project'
     }
 
     stages {
 
         stage('Checkout') {
             steps {
+                echo 'Checking out code...'
                 checkout scm
             }
         }
 
         stage('Build Image') {
             steps {
-                sh 'docker build -t cricket-app .'
+                echo 'Building Docker image...'
+
+                sh '''
+                docker build -t cricket-app .
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                sh 'docker run --rm cricket-app pytest test_app.py'
+                echo 'Running tests...'
+
+                sh '''
+                docker run --rm cricket-app pytest test_app.py
+                '''
             }
         }
 
         stage('Deploy') {
-    steps {
-        sh '''
-        docker compose down --remove-orphans || true
-        docker rm -f cassandra-db redis-cache cricket-api dashboard || true
-        docker compose up -d --build
-        docker compose ps
-        '''
-    }
-}
+
+            steps {
+
+                echo 'Stopping old containers...'
+
+                sh '''
+                docker rm -f cassandra-db redis-cache cricket-api dashboard || true
+                '''
+
+                echo 'Starting Cassandra...'
+
+                sh '''
+                docker run -d \
+                    --name cassandra-db \
+                    -p 9042:9042 \
+                    cassandra:4.1
+                '''
+
+                echo 'Starting Redis...'
+
+                sh '''
+                docker run -d \
+                    --name redis-cache \
+                    -p 6379:6379 \
+                    redis:latest
+                '''
+
+                echo 'Waiting for databases...'
+
+                sh '''
+                sleep 30
+                '''
+
+                echo 'Starting cricket-api...'
+
+                sh '''
+                docker run -d \
+                    --name cricket-api \
+                    -p 5000:5000 \
+                    cricket-app
+                '''
+
+                echo 'Starting dashboard...'
+
+                sh '''
+                docker run -d \
+                    --name dashboard \
+                    -p 8501:8501 \
+                    cricket-app \
+                    streamlit run dashboard.py \
+                    --server.port=8501 \
+                    --server.address=0.0.0.0
+                '''
+
+            }
+        }
 
         stage('Verify App') {
 
             steps {
+
+                echo 'Checking API health...'
 
                 sh '''
                 for i in $(seq 1 30)
@@ -64,11 +121,13 @@ pipeline {
     post {
 
         success {
-            echo 'Open: http://127.0.0.1:5000 and http://127.0.0.1:8501'
+            echo 'SUCCESS — Open: http://127.0.0.1:5000 and http://127.0.0.1:8501'
         }
 
         failure {
             echo 'Pipeline failed — check logs'
         }
+
     }
+
 }
