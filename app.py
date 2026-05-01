@@ -109,7 +109,7 @@ def rows_for_innings(match_id, innings):
 
 @app.route("/")
 def home():
-    return "Cricket Stats API Running - CI/CD DEMO V2" 
+    return "Cricket Stats API Running - CI/CD DEMO V" 
 
 
 # -------------------------
