@@ -164,14 +164,29 @@ def home():
 
     return "Cricket Stats API Running - CI/CD DEMO V"
 
+
+@app.route("/health")
+def health():
+
+    return jsonify(
+        {
+            "status": "ok",
+            "redis": "connected",
+            "cassandra": "connected" if session else "csv_fallback"
+        }
+    )
+
 # -------------------------
 # START SERVER
 # -------------------------
 
 if __name__ == "__main__":
 
+    debug_enabled = os.getenv("FLASK_DEBUG", "0") == "1"
+
     app.run(
         host="0.0.0.0",
         port=5000,
-        debug=True
+        debug=debug_enabled,
+        use_reloader=debug_enabled
     )

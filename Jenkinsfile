@@ -97,6 +97,7 @@ pipeline {
                 docker run -d \
                     --name cricket-api \
                     --network cricket-net \
+                    -e FLASK_DEBUG=0 \
                     -p 5000:5000 \
                     cricket-app
                 '''
@@ -131,7 +132,7 @@ pipeline {
                 for i in $(seq 1 30)
                 do
 
-                    if curl -s http://127.0.0.1:5000/health ; then
+                    if docker run --rm --network cricket-net cricket-app curl -fsS http://cricket-api:5000/health ; then
 
                         echo "API Ready"
 
@@ -163,13 +164,13 @@ pipeline {
 
         success {
 
-            echo 'SUCCESS — Open: http://localhost:5000 and http://localhost:8501'
+            echo 'SUCCESS - Open: http://localhost:5000 and http://localhost:8501'
 
         }
 
         failure {
 
-            echo 'Pipeline failed — check logs'
+            echo 'Pipeline failed - check logs'
 
         }
 
