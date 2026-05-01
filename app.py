@@ -109,7 +109,7 @@ def rows_for_innings(match_id, innings):
 
 @app.route("/")
 def home():
-    return "Cricket Stats API Running - CI/CD DEMO V3" 
+    return "Cricket Stats API Running - CI/CD DEMO V2" 
 
 
 # -------------------------
@@ -650,4 +650,8 @@ def wicket_players(match_id, wicket_type):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
