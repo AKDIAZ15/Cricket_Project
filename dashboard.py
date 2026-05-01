@@ -7,7 +7,7 @@ import streamlit as st
 BASE_URL = os.getenv("API_BASE_URL", "http://cricket-api:5000")
 
 st.set_page_config(
-    page_title="Cricket World Cup Statistics Board",
+    page_title="Cricket World Cup  Board",
     page_icon="🏏",
     layout="wide"
 )
