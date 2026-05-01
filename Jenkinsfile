@@ -42,8 +42,8 @@ pipeline {
                 echo 'Stopping old containers...'
 
                 sh '''
-                docker rm -f cassandra-db redis-cache cricket-api dashboard || true
-                docker network rm cricket-net || true
+                docker rm -f cassandra-db redis-cache cricket-api dashboard 2>/dev/null || true
+                docker network rm cricket-net 2>/dev/null || true
                 '''
 
                 echo 'Creating Docker network...'
@@ -72,10 +72,10 @@ pipeline {
                     redis:latest
                 '''
 
-                echo 'Waiting for Cassandra to initialize...'
+                echo 'Waiting for Cassandra & Redis...'
 
                 sh '''
-                sleep 60
+                sleep 90
                 '''
 
                 echo 'Starting cricket-api...'
@@ -111,6 +111,8 @@ pipeline {
                 sh '''
                 echo "Checking API readiness..."
 
+                sleep 20
+
                 for i in $(seq 1 30)
                 do
                     if curl -s http://127.0.0.1:5000/ ; then
@@ -127,7 +129,9 @@ pipeline {
 
                 exit 1
                 '''
+
             }
+
         }
 
     }
