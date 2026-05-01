@@ -9,30 +9,43 @@ pipeline {
     stages {
 
         stage('Checkout') {
+
             steps {
+
                 echo 'Checking out code...'
+
                 checkout scm
+
             }
+
         }
 
         stage('Build Image') {
+
             steps {
+
                 echo 'Building Docker image...'
 
                 sh '''
                 docker build -t cricket-app .
                 '''
+
             }
+
         }
 
         stage('Test') {
+
             steps {
+
                 echo 'Running tests...'
 
                 sh '''
                 docker run --rm cricket-app pytest test_app.py
                 '''
+
             }
+
         }
 
         stage('Deploy') {
@@ -102,41 +115,62 @@ pipeline {
                 '''
 
             }
+
         }
 
         stage('Verify App') {
+
             steps {
+
                 sh '''
+
                 echo "Checking API readiness..."
+
                 sleep 20
 
                 for i in $(seq 1 30)
                 do
-                    # Fix: Execute curl natively inside the container to bypass network isolation
-                    if docker exec cricket-api curl -s http://localhost:5000/ > /dev/null; then
-                        echo "✅ API Ready"
+
+                    if curl -s http://127.0.0.1:5000/health ; then
+
+                        echo "API Ready"
+
                         exit 0
+
                     fi
 
-                    echo "⏳ Waiting for API..."
+                    echo "Waiting for API..."
+
                     sleep 5
+
                 done
 
-                echo "❌ API failed to start"
+                echo "API failed to start"
+
                 docker logs cricket-api --tail 100
+
                 exit 1
+
                 '''
+
             }
+
         }
+
+    }
 
     post {
 
         success {
-            echo 'SUCCESS — Open: http://127.0.0.1:5000 and http://127.0.0.1:8501'
+
+            echo 'SUCCESS — Open: http://localhost:5000 and http://localhost:8501'
+
         }
 
         failure {
+
             echo 'Pipeline failed — check logs'
+
         }
 
     }
