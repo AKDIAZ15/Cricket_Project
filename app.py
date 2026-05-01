@@ -55,6 +55,20 @@ else:
 session = None
 csv_rows = []
 
+
+def rows_for_match(match_id):
+    return [
+        row for row in csv_rows
+        if row["match_id"] == match_id
+    ]
+
+
+def wicket_count(rows):
+    return sum(
+        1 for row in rows
+        if row.get("player_dismissed")
+    )
+
 def to_int(value):
     if value in (None, ""):
         return 0
@@ -154,6 +168,192 @@ def live_feed(match_id, innings):
             continue
 
     return jsonify(lines)
+
+
+@app.route("/years")
+def years():
+
+    seasons = sorted(
+        {
+            row["season"]
+            for row in csv_rows
+        }
+    )
+
+    return jsonify(seasons)
+
+
+@app.route("/matches/<int:season>")
+def matches(season):
+
+    seen = {}
+
+    for row in csv_rows:
+
+        if row["season"] != season:
+            continue
+
+        match_id = row["match_id"]
+
+        if match_id not in seen:
+            seen[match_id] = {
+                "match_id": match_id,
+                "teams": [],
+                "venue": row["venue"]
+            }
+
+        for team_key in ("batting_team", "bowling_team"):
+            team = row[team_key]
+
+            if team and team not in seen[match_id]["teams"]:
+                seen[match_id]["teams"].append(team)
+
+    match_list = []
+
+    for match in seen.values():
+
+        teams = " vs ".join(match["teams"][:2])
+
+        match_list.append(
+            {
+                "match_id": match["match_id"],
+                "label": f'{match["match_id"]} - {teams} at {match["venue"]}'
+            }
+        )
+
+    return jsonify(
+        sorted(match_list, key=lambda item: item["match_id"])
+    )
+
+
+@app.route("/innings/<int:match_id>")
+def innings(match_id):
+
+    return jsonify(
+        sorted(
+            {
+                row["innings"]
+                for row in rows_for_match(match_id)
+            }
+        )
+    )
+
+
+@app.route("/match_summary/<int:match_id>")
+def match_summary(match_id):
+
+    rows = rows_for_match(match_id)
+
+    teams = []
+
+    for row in rows:
+        for team_key in ("batting_team", "bowling_team"):
+            team = row[team_key]
+
+            if team and team not in teams:
+                teams.append(team)
+
+    return jsonify(
+        {
+            "teams": teams[:2],
+            "venue": rows[0]["venue"] if rows else "Unknown",
+            "runs": sum(
+                row["runs_off_bat"]
+                + row["wides"]
+                + row["noballs"]
+                + row["byes"]
+                + row["legbyes"]
+                for row in rows
+            ),
+            "wickets": wicket_count(rows)
+        }
+    )
+
+
+@app.route("/extras/<int:match_id>")
+def extras(match_id):
+
+    rows = rows_for_match(match_id)
+
+    return jsonify(
+        {
+            "wides": sum(row["wides"] for row in rows),
+            "noballs": sum(row["noballs"] for row in rows),
+            "byes": sum(row["byes"] for row in rows),
+            "legbyes": sum(row["legbyes"] for row in rows)
+        }
+    )
+
+
+@app.route("/wicket_types/<int:match_id>")
+def wicket_types(match_id):
+
+    types = sorted(
+        {
+            row["wicket_type"]
+            for row in rows_for_match(match_id)
+            if row.get("wicket_type")
+        }
+    )
+
+    return jsonify(types)
+
+
+@app.route("/wicket_players/<int:match_id>/<wicket_type>")
+def wicket_players(match_id, wicket_type):
+
+    players = []
+
+    for row in rows_for_match(match_id):
+
+        if row.get("wicket_type") != wicket_type:
+            continue
+
+        players.append(
+            {
+                "player": row.get("player_dismissed") or "Unknown",
+                "wicket_type": row["wicket_type"],
+                "bowler": row.get("bowler") or "Unknown",
+                "innings": row["innings"],
+                "over": row["over"],
+                "ball": row["ball_no"]
+            }
+        )
+
+    return jsonify(players)
+
+
+@app.route("/player_search/<player_name>")
+def player_search(player_name):
+
+    query = player_name.lower()
+    player_matches = {}
+
+    for row in csv_rows:
+
+        striker = row["striker"]
+
+        if query not in striker.lower():
+            continue
+
+        key = (striker, row["match_id"])
+
+        if key not in player_matches:
+            player_matches[key] = {
+                "player": striker,
+                "match_id": row["match_id"],
+                "season": row["season"],
+                "runs": 0
+            }
+
+        player_matches[key]["runs"] += row["runs_off_bat"]
+
+    return jsonify(
+        sorted(
+            player_matches.values(),
+            key=lambda item: (item["player"], item["season"], item["match_id"])
+        )[:100]
+    )
 
 # -------------------------
 # HOME ROUTE
