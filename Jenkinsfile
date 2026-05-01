@@ -42,7 +42,7 @@ pipeline {
                 echo 'Stopping old containers...'
 
                 sh '''
-                docker rm -f cassandra-db redis-cache cricket-api dashboard || true
+                docker rm -f cassandra-db redis-cache cricket-api dashboard 2>$null
                 '''
 
                 echo 'Starting Cassandra...'
@@ -94,29 +94,28 @@ pipeline {
         }
 
         stage('Verify App') {
+    steps {
+        sh '''
+        echo "Checking API readiness..."
 
-            steps {
+        for i in $(seq 1 30)
+        do
+            if curl -s http://127.0.0.1:5000/ ; then
+                echo "API Ready"
+                exit 0
+            fi
 
-                echo 'Checking API health...'
+            echo "Waiting for API..."
+            sleep 5
+        done
 
-                sh '''
-                for i in $(seq 1 30)
-                do
-                    if docker exec cricket-api curl -s http://127.0.0.1:5000/ ; then
-                        echo "API Ready"
-                        exit 0
-                    fi
+        echo "API failed to start"
+        docker logs cricket-api --tail 100
 
-                    echo "Waiting for cricket-api..."
-                    sleep 5
-                done
-
-                docker logs cricket-api --tail 100
-                exit 1
-                '''
-            }
-        }
+        exit 1
+        '''
     }
+}
 
     post {
 

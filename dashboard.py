@@ -4,7 +4,7 @@ import time
 import requests
 import streamlit as st
 
-BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:5000")
+BASE_URL = os.getenv("API_BASE_URL", "http://cricket-api:5000")
 
 st.set_page_config(
     page_title="Cricket World Cup Statistics Board",
@@ -133,7 +133,7 @@ st.markdown(
 st.markdown(
     """
     <div class="hero">
-        <h1>🏏 Cricket World Cup Board</h1>
+        <h1>🏏 Cricket World Cup Statistics Board</h1>
         <p>Match analytics, extras, wickets, player search, and live ball-by-ball simulation.</p>
     </div>
     """,
