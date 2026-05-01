@@ -1,24 +1,51 @@
-version: "3.8"
-
 services:
 
-  cassandra:
+  cassandra-db:
     image: cassandra:4.1
     container_name: cassandra-db
     ports:
       - "9042:9042"
 
-  redis:
+  redis-cache:
     image: redis:latest
     container_name: redis-cache
     ports:
       - "6379:6379"
 
-  flask-app:
+  cricket-api:
     build: .
     container_name: cricket-api
+    environment:
+      CASSANDRA_HOST: cassandra-db
+      REDIS_HOST: redis-cache
     ports:
       - "5000:5000"
     depends_on:
-      - cassandra
-      - redis
+      - cassandra-db
+      - redis-cache
+
+  dashboard:
+    build: .
+    container_name: dashboard
+    command: streamlit run dashboard.py --server.port=8501 --server.address=0.0.0.0
+    environment:
+      API_BASE_URL: http://cricket-api:5000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - cricket-api
+
+  simulator:
+    build: .
+    container_name: simulator
+    command: python live_match_status_simulator.py
+    environment:
+      API_BASE_URL: http://cricket-api:5000
+      REDIS_HOST: redis-cache
+    stdin_open: true
+    tty: true
+    profiles:
+      - manual
+    depends_on:
+      - cricket-api
+      - redis-cache

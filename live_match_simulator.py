@@ -6,7 +6,7 @@ import time
 # Cassandra Connection
 # -------------------------
 
-cluster = Cluster(['127.0.0.1'])
+cluster = Cluster(['cassandra-db'])
 session = cluster.connect('cricket_worldcup')
 
 # -------------------------

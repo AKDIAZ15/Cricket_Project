@@ -1,0 +1,11 @@
+.git
+.pytest_cache
+.vscode
+__pycache__
+*.pyc
+venv
+pytest-cache-files-*
+app_start.out
+app_start.err
+app_check.out
+app_check.err

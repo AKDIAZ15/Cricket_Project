@@ -1,11 +1,12 @@
 import time
 import requests
 import redis
+import os
 
-BASE_URL = "http://127.0.0.1:5000"
+BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:5000")
 
 r = redis.Redis(
-    host="127.0.0.1",
+    host=os.getenv("REDIS_HOST", "127.0.0.1"),
     port=6379,
     decode_responses=True
 )

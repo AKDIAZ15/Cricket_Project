@@ -2,103 +2,73 @@ pipeline {
 
     agent any
 
+    environment {
+        DOCKER_API_VERSION = '1.43'
+        COMPOSE_PROJECT_NAME = 'cricket_project'
+    }
+
     stages {
 
         stage('Checkout') {
-
             steps {
-
-                echo "📥 Checking out code..."
-
                 checkout scm
-
             }
         }
 
-        stage('Build') {
-
+        stage('Build Image') {
             steps {
-
-                echo "🔨 Building Docker image..."
-
-                sh '''
-                docker build -t cricket-app .
-                '''
-
+                sh 'docker build -t cricket-app .'
             }
         }
 
         stage('Test') {
-
             steps {
-
-                echo "🧪 Running tests inside container..."
-
-                sh '''
-                docker run --rm cricket-app pytest test_app.py
-                '''
-
+                sh 'docker run --rm cricket-app pytest test_app.py'
             }
         }
 
-        stage('Docker Deploy') {
+        stage('Deploy') {
+    steps {
+        sh '''
+        docker compose down --remove-orphans || true
+        docker rm -f cassandra-db redis-cache cricket-api dashboard || true
+        docker compose up -d --build
+        docker compose ps
+        '''
+    }
+}
+
+        stage('Verify App') {
 
             steps {
 
-                echo '🐳 Cleaning old containers...'
-
                 sh '''
-                docker rm -f cassandra-db redis-cache cricket-api || true
-                docker-compose down --remove-orphans || true
-                '''
-
-                echo '🐳 Starting containers...'
-
-                sh '''
-                docker-compose up -d
-                '''
-
-            }
-
-        }
-
-        stage('Cassandra Health Check') {
-
-            steps {
-
-                echo "❤️ Checking Cassandra..."
-
-                sh '''
-                echo "Waiting for Cassandra to initialize..."
-
-                for i in {1..12}
+                for i in $(seq 1 30)
                 do
-                    docker exec cassandra-db nodetool status && break
-                    echo "Cassandra not ready yet..."
-                    sleep 10
+                    if docker exec cricket-api curl -s http://127.0.0.1:5000/ ; then
+                        echo "API Ready"
+                        exit 0
+                    fi
+
+                    echo "Waiting for cricket-api..."
+                    sleep 5
                 done
+
+                docker logs cricket-api --tail 100
+                exit 1
                 '''
-
             }
-
         }
-
     }
 
     post {
 
         success {
-
-            echo "✅ Pipeline Completed Successfully 🎉"
-
+            echo 'Open: http://127.0.0.1:5000 and http://127.0.0.1:8501'
         }
 
         failure {
-
-            echo "❌ Pipeline Failed"
-
+            echo 'Pipeline failed — check logs'
         }
-
     }
-
 }
