@@ -42,7 +42,14 @@ pipeline {
                 echo 'Stopping old containers...'
 
                 sh '''
-                docker rm -f cassandra-db redis-cache cricket-api dashboard 2>$null
+                docker rm -f cassandra-db redis-cache cricket-api dashboard || true
+                docker network rm cricket-net || true
+                '''
+
+                echo 'Creating Docker network...'
+
+                sh '''
+                docker network create cricket-net
                 '''
 
                 echo 'Starting Cassandra...'
@@ -50,6 +57,7 @@ pipeline {
                 sh '''
                 docker run -d \
                     --name cassandra-db \
+                    --network cricket-net \
                     -p 9042:9042 \
                     cassandra:4.1
                 '''
@@ -59,14 +67,15 @@ pipeline {
                 sh '''
                 docker run -d \
                     --name redis-cache \
+                    --network cricket-net \
                     -p 6379:6379 \
                     redis:latest
                 '''
 
-                echo 'Waiting for databases...'
+                echo 'Waiting for Cassandra to initialize...'
 
                 sh '''
-                sleep 30
+                sleep 60
                 '''
 
                 echo 'Starting cricket-api...'
@@ -74,6 +83,7 @@ pipeline {
                 sh '''
                 docker run -d \
                     --name cricket-api \
+                    --network cricket-net \
                     -p 5000:5000 \
                     cricket-app
                 '''
@@ -83,6 +93,7 @@ pipeline {
                 sh '''
                 docker run -d \
                     --name dashboard \
+                    --network cricket-net \
                     -p 8501:8501 \
                     cricket-app \
                     streamlit run dashboard.py \
@@ -94,28 +105,32 @@ pipeline {
         }
 
         stage('Verify App') {
-    steps {
-        sh '''
-        echo "Checking API readiness..."
 
-        for i in $(seq 1 30)
-        do
-            if curl -s http://127.0.0.1:5000/ ; then
-                echo "API Ready"
-                exit 0
-            fi
+            steps {
 
-            echo "Waiting for API..."
-            sleep 5
-        done
+                sh '''
+                echo "Checking API readiness..."
 
-        echo "API failed to start"
-        docker logs cricket-api --tail 100
+                for i in $(seq 1 30)
+                do
+                    if curl -s http://127.0.0.1:5000/ ; then
+                        echo "API Ready"
+                        exit 0
+                    fi
 
-        exit 1
-        '''
+                    echo "Waiting for API..."
+                    sleep 5
+                done
+
+                echo "API failed to start"
+                docker logs cricket-api --tail 100
+
+                exit 1
+                '''
+            }
+        }
+
     }
-}
 
     post {
 
