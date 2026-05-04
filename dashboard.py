@@ -133,7 +133,7 @@ st.markdown(
 st.markdown(
     """
     <div class="hero">
-        <h1>🏏 Cricket World Cup RCB</h1>
+        <h1>🏏 Cricket World Cup Statistics</h1>
         <p>Match analytics, extras, wickets, player search, and live ball-by-ball simulation.</p>
     </div>
     """,
