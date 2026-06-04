@@ -285,6 +285,35 @@ def extras(match_id):
     )
 
 
+@app.route("/balls/<int:match_id>/<int:innings>")
+def balls(match_id, innings):
+
+    rows = [
+        row for row in rows_for_match(match_id)
+        if row["innings"] == innings
+    ]
+
+    return jsonify(
+        [
+            {
+                "over": row["over"],
+                "ball": row["ball_no"],
+                "striker": row.get("striker") or "Unknown",
+                "bowler": row.get("bowler") or "Unknown",
+                "runs": (
+                    row["runs_off_bat"]
+                    + row["wides"]
+                    + row["noballs"]
+                    + row["byes"]
+                    + row["legbyes"]
+                ),
+                "wicket": row.get("player_dismissed") or None
+            }
+            for row in rows
+        ]
+    )
+
+
 @app.route("/wicket_types/<int:match_id>")
 def wicket_types(match_id):
 
